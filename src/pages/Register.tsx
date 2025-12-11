@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Heart, Mail, Lock, Eye, EyeOff, User, Phone } from 'lucide-react';
+import { Heart, Mail, Lock, Eye, EyeOff, User, Phone, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -15,10 +16,17 @@ const Register = () => {
     confirmPassword: '',
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState<'admin' | 'client' | 'vendor'>('admin');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signUp, user, loading } = useAuth();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/dashboard');
+    }
+  }, [user, loading, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -26,6 +34,15 @@ const Register = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.name || !formData.email || !formData.password) {
+      toast({
+        title: 'Error',
+        description: 'Nama, email, dan password harus diisi',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     if (formData.password !== formData.confirmPassword) {
       toast({
@@ -36,18 +53,54 @@ const Register = () => {
       return;
     }
 
+    if (formData.password.length < 6) {
+      toast({
+        title: 'Error',
+        description: 'Password minimal 6 karakter',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsLoading(true);
 
-    // Simulate registration
-    setTimeout(() => {
+    const { error } = await signUp(formData.email, formData.password, {
+      full_name: formData.name,
+      phone: formData.phone,
+    });
+
+    if (error) {
       setIsLoading(false);
+      let message = 'Terjadi kesalahan saat mendaftar';
+      
+      if (error.message.includes('User already registered')) {
+        message = 'Email sudah terdaftar. Silakan login.';
+      } else if (error.message.includes('Invalid email')) {
+        message = 'Format email tidak valid';
+      }
+      
       toast({
-        title: 'Registrasi Berhasil!',
-        description: 'Akun Anda telah dibuat. Silakan login.',
+        title: 'Pendaftaran Gagal',
+        description: message,
+        variant: 'destructive',
       });
-      navigate('/login');
-    }, 1000);
+      return;
+    }
+
+    toast({
+      title: 'Pendaftaran Berhasil!',
+      description: 'Akun Anda telah dibuat. Silakan login.',
+    });
+    navigate('/login');
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex">
@@ -85,27 +138,6 @@ const Register = () => {
           <p className="text-muted-foreground mb-8">
             Daftar gratis dan mulai rencanakan pernikahan impian
           </p>
-
-          {/* Role Selection */}
-          <div className="mb-6">
-            <Label className="text-sm font-medium mb-3 block">Daftar sebagai</Label>
-            <div className="grid grid-cols-3 gap-2">
-              {(['admin', 'client', 'vendor'] as const).map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => setRole(r)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    role === r
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                  }`}
-                >
-                  {r.charAt(0).toUpperCase() + r.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -155,7 +187,6 @@ const Register = () => {
                   value={formData.phone}
                   onChange={handleChange}
                   className="pl-10"
-                  required
                 />
               </div>
             </div>
@@ -168,7 +199,7 @@ const Register = () => {
                   id="password"
                   name="password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Min. 8 karakter"
+                  placeholder="Minimal 6 karakter"
                   value={formData.password}
                   onChange={handleChange}
                   className="pl-10 pr-10"
@@ -220,7 +251,14 @@ const Register = () => {
               className="w-full bg-accent hover:bg-rose-gold-dark text-accent-foreground shadow-button"
               disabled={isLoading}
             >
-              {isLoading ? 'Memproses...' : 'Daftar Sekarang'}
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Memproses...
+                </>
+              ) : (
+                'Daftar Sekarang'
+              )}
             </Button>
           </form>
 
