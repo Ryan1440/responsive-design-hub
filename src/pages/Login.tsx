@@ -1,34 +1,76 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Heart, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Heart, Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState<'admin' | 'client' | 'vendor'>('admin');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signIn, user, loading } = useAuth();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/dashboard');
+    }
+  }, [user, loading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email || !password) {
+      toast({
+        title: 'Error',
+        description: 'Email dan password harus diisi',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsLoading(true);
 
-    // Simulate login
-    setTimeout(() => {
+    const { error } = await signIn(email, password);
+
+    if (error) {
       setIsLoading(false);
+      let message = 'Terjadi kesalahan saat login';
+      
+      if (error.message.includes('Invalid login credentials')) {
+        message = 'Email atau password salah';
+      } else if (error.message.includes('Email not confirmed')) {
+        message = 'Email belum dikonfirmasi';
+      }
+      
       toast({
-        title: 'Login Berhasil!',
-        description: `Selamat datang kembali sebagai ${role}.`,
+        title: 'Login Gagal',
+        description: message,
+        variant: 'destructive',
       });
-      navigate('/dashboard');
-    }, 1000);
+      return;
+    }
+
+    toast({
+      title: 'Login Berhasil!',
+      description: 'Selamat datang kembali.',
+    });
+    navigate('/dashboard');
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex">
@@ -50,27 +92,6 @@ const Login = () => {
           <p className="text-muted-foreground mb-8">
             Masuk ke akun Anda untuk melanjutkan
           </p>
-
-          {/* Role Selection */}
-          <div className="mb-6">
-            <Label className="text-sm font-medium mb-3 block">Login sebagai</Label>
-            <div className="grid grid-cols-3 gap-2">
-              {(['admin', 'client', 'vendor'] as const).map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => setRole(r)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    role === r
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                  }`}
-                >
-                  {r.charAt(0).toUpperCase() + r.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -113,22 +134,19 @@ const Login = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" className="rounded border-border" />
-                <span className="text-muted-foreground">Ingat saya</span>
-              </label>
-              <a href="#" className="text-sm text-accent hover:underline">
-                Lupa password?
-              </a>
-            </div>
-
             <Button
               type="submit"
               className="w-full bg-accent hover:bg-rose-gold-dark text-accent-foreground shadow-button"
               disabled={isLoading}
             >
-              {isLoading ? 'Memproses...' : 'Masuk'}
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Memproses...
+                </>
+              ) : (
+                'Masuk'
+              )}
             </Button>
           </form>
 
