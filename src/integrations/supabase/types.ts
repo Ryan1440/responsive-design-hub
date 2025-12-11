@@ -14,16 +14,311 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      client_vendors: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          id: string
+          vendor_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          id?: string
+          vendor_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_vendors_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_vendors_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clients: {
+        Row: {
+          budget: number | null
+          created_at: string | null
+          created_by: string | null
+          email: string
+          event_date: string
+          id: string
+          name: string
+          partner: string
+          phone: string | null
+          preferences: string[] | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+          venue: string | null
+        }
+        Insert: {
+          budget?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          email: string
+          event_date: string
+          id?: string
+          name: string
+          partner: string
+          phone?: string | null
+          preferences?: string[] | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          venue?: string | null
+        }
+        Update: {
+          budget?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          email?: string
+          event_date?: string
+          id?: string
+          name?: string
+          partner?: string
+          phone?: string | null
+          preferences?: string[] | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          venue?: string | null
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          client_id: string
+          created_at: string | null
+          created_by: string | null
+          due_date: string | null
+          id: string
+          notes: string | null
+          paid_date: string | null
+          status: string | null
+          type: string
+          updated_at: string | null
+          vendor_id: string
+        }
+        Insert: {
+          amount?: number
+          client_id: string
+          created_at?: string | null
+          created_by?: string | null
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          paid_date?: string | null
+          status?: string | null
+          type: string
+          updated_at?: string | null
+          vendor_id: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          paid_date?: string | null
+          status?: string | null
+          type?: string
+          updated_at?: string | null
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          id: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      timeline_tasks: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          milestone: string | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          milestone?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          milestone?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timeline_tasks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vendors: {
+        Row: {
+          category: string
+          contact: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          email: string | null
+          id: string
+          name: string
+          price_range: string | null
+          rating: number | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          category: string
+          contact?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          price_range?: string | null
+          rating?: number | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          category?: string
+          contact?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          price_range?: string | null
+          rating?: number | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "client" | "vendor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +445,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "client", "vendor"],
+    },
   },
 } as const
