@@ -309,11 +309,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      client_assigned_to_user_vendor: {
+        Args: { client_uuid: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      user_owns_client: { Args: { client_uuid: string }; Returns: boolean }
+      user_owns_vendor: { Args: { vendor_uuid: string }; Returns: boolean }
+      vendor_assigned_to_user_client: {
+        Args: { vendor_uuid: string }
         Returns: boolean
       }
     }
