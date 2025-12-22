@@ -1,12 +1,12 @@
 import { Outlet } from 'react-router-dom';
-import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
+import RoleBasedSidebar from '@/components/dashboard/RoleBasedSidebar';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
 const DashboardLayout = () => {
   return (
     <ProtectedRoute>
       <div className="flex min-h-screen bg-background">
-        <DashboardSidebar />
+        <RoleBasedSidebar />
         <main className="flex-1 overflow-auto">
           <Outlet />
         </main>
