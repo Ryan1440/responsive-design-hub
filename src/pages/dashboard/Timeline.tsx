@@ -27,7 +27,12 @@ const Timeline = () => {
     dueDate: '',
   });
 
-  const { tasks, isLoading: tasksLoading, createTask, updateTask } = useTimeline(selectedClient || undefined);
+  const { tasks: allTasks, isLoading: tasksLoading, createTask, updateTask } = useTimeline();
+  
+  // Filter tasks by selected client
+  const tasks = selectedClient 
+    ? allTasks.filter(task => task.client_id === selectedClient)
+    : allTasks;
 
   const isAdmin = userRole === 'admin';
 

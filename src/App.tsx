@@ -15,6 +15,13 @@ import Timeline from "./pages/dashboard/Timeline";
 import Finance from "./pages/dashboard/Finance";
 import Reports from "./pages/dashboard/Reports";
 import NotFound from "./pages/NotFound";
+import ClientOverview from "./pages/dashboard/client/ClientOverview";
+import ClientTimeline from "./pages/dashboard/client/ClientTimeline";
+import ClientPayments from "./pages/dashboard/client/ClientPayments";
+import ClientVendors from "./pages/dashboard/client/ClientVendors";
+import ContactWO from "./pages/dashboard/ContactWO";
+import VendorOverview from "./pages/dashboard/vendor/VendorOverview";
+import RoleBasedOverview from "./pages/dashboard/RoleBasedOverview";
 
 const queryClient = new QueryClient();
 
@@ -30,12 +37,21 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/dashboard" element={<DashboardLayout />}>
-              <Route index element={<Overview />} />
+              <Route index element={<RoleBasedOverview />} />
+              {/* Admin Routes */}
               <Route path="clients" element={<Clients />} />
               <Route path="vendors" element={<Vendors />} />
               <Route path="timeline" element={<Timeline />} />
               <Route path="finance" element={<Finance />} />
               <Route path="reports" element={<Reports />} />
+              {/* Client Routes */}
+              <Route path="my-timeline" element={<ClientTimeline />} />
+              <Route path="my-payments" element={<ClientPayments />} />
+              <Route path="my-vendors" element={<ClientVendors />} />
+              <Route path="contact" element={<ContactWO />} />
+              {/* Vendor Routes */}
+              <Route path="events" element={<VendorOverview />} />
+              <Route path="tasks" element={<VendorOverview />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
