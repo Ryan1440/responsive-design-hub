@@ -1,13 +1,21 @@
 import { useAuth } from '@/hooks/useAuth';
+import { useClients } from '@/hooks/useClients';
+import { useVendors } from '@/hooks/useVendors';
 import Overview from './Overview';
 import ClientOverview from './client/ClientOverview';
 import VendorOverview from './vendor/VendorOverview';
+import ClientOnboarding from '@/components/onboarding/ClientOnboarding';
+import VendorOnboarding from '@/components/onboarding/VendorOnboarding';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const RoleBasedOverview = () => {
-  const { userRole, loading } = useAuth();
+  const { user, userRole, loading } = useAuth();
+  const { clients, isLoading: clientsLoading } = useClients();
+  const { vendors, isLoading: vendorsLoading } = useVendors();
 
-  if (loading) {
+  const isLoading = loading || clientsLoading || vendorsLoading;
+
+  if (isLoading) {
     return (
       <div className="p-8">
         <Skeleton className="h-10 w-64 mb-8" />
@@ -20,15 +28,23 @@ const RoleBasedOverview = () => {
     );
   }
 
+  // Check if client has data
+  const hasClientData = clients.some(c => c.user_id === user?.id);
+  
+  // Check if vendor has data
+  const hasVendorData = vendors.some(v => v.user_id === user?.id);
+
   switch (userRole) {
     case 'admin':
       return <Overview />;
     case 'client':
-      return <ClientOverview />;
+      // Show onboarding if no client data
+      return hasClientData ? <ClientOverview /> : <ClientOnboarding />;
     case 'vendor':
-      return <VendorOverview />;
+      // Show onboarding if no vendor data
+      return hasVendorData ? <VendorOverview /> : <VendorOnboarding />;
     default:
-      return <ClientOverview />; // Default to client view
+      return hasClientData ? <ClientOverview /> : <ClientOnboarding />;
   }
 };
 

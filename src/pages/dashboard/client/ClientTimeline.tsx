@@ -13,8 +13,8 @@ const ClientTimeline = () => {
   const { clients, isLoading: clientsLoading } = useClients();
   const { tasks: allTasks, isLoading: tasksLoading } = useTimeline();
 
-  // Get client's own data
-  const myClient = clients.find(c => c.email === user?.email);
+  // Get client's own data using user_id
+  const myClient = clients.find(c => c.user_id === user?.id);
   
   // Filter tasks for this client
   const tasks = myClient ? allTasks.filter(t => t.client_id === myClient.id) : [];

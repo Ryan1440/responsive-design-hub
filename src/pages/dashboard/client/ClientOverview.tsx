@@ -15,8 +15,8 @@ const ClientOverview = () => {
 
   const isLoading = clientsLoading || paymentsLoading || tasksLoading;
 
-  // Get client's own data (assuming client's email matches their user email)
-  const myClient = clients.find(c => c.email === user?.email);
+  // Get client's own data using user_id
+  const myClient = clients.find(c => c.user_id === user?.id);
   
   // Get tasks for this client
   const myTasks = myClient ? tasks.filter(t => t.client_id === myClient.id) : [];

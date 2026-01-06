@@ -15,8 +15,8 @@ const ClientPayments = () => {
 
   const isLoading = clientsLoading || paymentsLoading || vendorsLoading;
 
-  // Get client's own data
-  const myClient = clients.find(c => c.email === user?.email);
+  // Get client's own data using user_id
+  const myClient = clients.find(c => c.user_id === user?.id);
   
   // Get payments for this client
   const myPayments = myClient ? payments.filter(p => p.client_id === myClient.id) : [];
