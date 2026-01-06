@@ -31,8 +31,8 @@ const VendorOverview = () => {
 
   const isLoading = vendorsLoading || clientsLoading || tasksLoading || paymentsLoading || assignmentsLoading;
 
-  // Get vendor's own data (assuming vendor's email matches)
-  const myVendor = vendors.find(v => v.email === user?.email);
+  // Get vendor's own data using user_id
+  const myVendor = vendors.find(v => v.user_id === user?.id);
 
   // Get clients assigned to this vendor
   const assignedClientIds = myVendor 
