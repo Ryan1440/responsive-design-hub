@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import RoleSelector from '@/components/RoleSelector';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -14,14 +15,14 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signIn, user, loading } = useAuth();
+  const { signIn, user, loading, userRole, availableRoles, needsRoleSelection, selectRole } = useAuth();
 
-  // Redirect if already logged in
+  // Redirect if already logged in AND has selected a role
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && user && userRole && !needsRoleSelection) {
       navigate('/dashboard');
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, userRole, needsRoleSelection, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,10 +58,16 @@ const Login = () => {
       return;
     }
 
+    setIsLoading(false);
     toast({
       title: 'Login Berhasil!',
       description: 'Selamat datang kembali.',
     });
+    // Navigation will happen via useEffect when role is determined
+  };
+
+  const handleRoleSelect = (role: 'admin' | 'client' | 'vendor') => {
+    selectRole(role);
     navigate('/dashboard');
   };
 
@@ -175,6 +182,13 @@ const Login = () => {
           </p>
         </div>
       </div>
+
+      {/* Role Selector Modal */}
+      <RoleSelector
+        open={needsRoleSelection && !!user}
+        roles={availableRoles}
+        onSelectRole={handleRoleSelect}
+      />
     </div>
   );
 };
