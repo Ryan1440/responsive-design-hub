@@ -72,7 +72,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) throw error;
       
-      const roles = (data?.map(r => r.role) ?? []) as AppRole[];
+      let roles = (data?.map(r => r.role) ?? []) as AppRole[];
+      
+      // If user has no roles, create default 'client' role
+      if (roles.length === 0) {
+        const { error: insertError } = await supabase
+          .from('user_roles')
+          .insert({ user_id: userId, role: 'client' });
+        
+        if (!insertError) {
+          roles = ['client'];
+        }
+      }
+      
       setAvailableRoles(roles);
       
       // If user already has a selected role, keep it

@@ -7,7 +7,7 @@ const ContactWO = () => {
   const { user } = useAuth();
   const { clients } = useClients();
   
-  const myClient = clients.find(c => c.email === user?.email);
+  const myClient = clients.find(c => c.user_id === user?.id);
 
   // WO Contact Info - Replace with actual data
   const woContact = {

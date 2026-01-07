@@ -32,9 +32,9 @@ const adminMenuItems = [
 
 const clientMenuItems = [
   { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-  { name: 'Timeline', icon: ClipboardList, path: '/dashboard/timeline' },
-  { name: 'Pembayaran', icon: Wallet, path: '/dashboard/finance' },
-  { name: 'Vendor', icon: Store, path: '/dashboard/vendors' },
+  { name: 'Timeline', icon: ClipboardList, path: '/dashboard/my-timeline' },
+  { name: 'Pembayaran', icon: Wallet, path: '/dashboard/my-payments' },
+  { name: 'Vendor', icon: Store, path: '/dashboard/my-vendors' },
   { name: 'Hubungi WO', icon: MessageCircle, path: '/dashboard/contact' },
 ];
 
@@ -42,7 +42,6 @@ const vendorMenuItems = [
   { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
   { name: 'Acara Saya', icon: Calendar, path: '/dashboard/events' },
   { name: 'Tugas', icon: ClipboardList, path: '/dashboard/tasks' },
-  { name: 'Profil', icon: User, path: '/dashboard/profile' },
 ];
 
 const RoleBasedSidebar = () => {
