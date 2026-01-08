@@ -13,7 +13,7 @@ interface AuthContextType {
   availableRoles: AppRole[];
   needsRoleSelection: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null; roles?: AppRole[] }>;
-  signUp: (email: string, password: string, metadata?: { full_name?: string; phone?: string }) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, metadata?: { full_name?: string; phone?: string; selected_role?: 'client' | 'vendor' }) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   selectRole: (role: AppRole) => void;
   clearRoleSelection: () => void;
@@ -72,18 +72,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) throw error;
       
-      let roles = (data?.map(r => r.role) ?? []) as AppRole[];
-      
-      // If user has no roles, create default 'client' role
-      if (roles.length === 0) {
-        const { error: insertError } = await supabase
-          .from('user_roles')
-          .insert({ user_id: userId, role: 'client' });
-        
-        if (!insertError) {
-          roles = ['client'];
-        }
-      }
+      const roles = (data?.map(r => r.role) ?? []) as AppRole[];
       
       setAvailableRoles(roles);
       
@@ -130,7 +119,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signUp = async (
     email: string, 
     password: string, 
-    metadata?: { full_name?: string; phone?: string }
+    metadata?: { full_name?: string; phone?: string; selected_role?: 'client' | 'vendor' }
   ) => {
     try {
       const redirectUrl = `${window.location.origin}/`;

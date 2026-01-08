@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Heart, Mail, Lock, Eye, EyeOff, User, Phone, Loader2 } from 'lucide-react';
+import { Heart, Mail, Lock, Eye, EyeOff, User, Phone, Loader2, Users, Store } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+
+type SelectedRole = 'client' | 'vendor';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -15,6 +17,7 @@ const Register = () => {
     password: '',
     confirmPassword: '',
   });
+  const [selectedRole, setSelectedRole] = useState<SelectedRole>('client');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -67,6 +70,7 @@ const Register = () => {
     const { error } = await signUp(formData.email, formData.password, {
       full_name: formData.name,
       phone: formData.phone,
+      selected_role: selectedRole,
     });
 
     if (error) {
@@ -188,6 +192,43 @@ const Register = () => {
                   onChange={handleChange}
                   className="pl-10"
                 />
+              </div>
+            </div>
+
+            {/* Role Selection */}
+            <div>
+              <Label>Daftar Sebagai</Label>
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedRole('client')}
+                  className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
+                    selectedRole === 'client'
+                      ? 'border-accent bg-accent/10 text-accent'
+                      : 'border-border bg-background hover:border-muted-foreground'
+                  }`}
+                >
+                  <Users className="w-6 h-6" />
+                  <span className="font-medium">Klien</span>
+                  <span className="text-xs text-muted-foreground text-center">
+                    Pasangan yang akan menikah
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedRole('vendor')}
+                  className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
+                    selectedRole === 'vendor'
+                      ? 'border-accent bg-accent/10 text-accent'
+                      : 'border-border bg-background hover:border-muted-foreground'
+                  }`}
+                >
+                  <Store className="w-6 h-6" />
+                  <span className="font-medium">Vendor</span>
+                  <span className="text-xs text-muted-foreground text-center">
+                    Penyedia jasa pernikahan
+                  </span>
+                </button>
               </div>
             </div>
 
