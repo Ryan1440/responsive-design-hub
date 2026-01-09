@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Plus, Search, Filter, Star, Phone, Mail, MoreVertical } from 'lucide-react';
+import { Plus, Search, Filter, Star, Phone, Mail, MoreVertical, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { mockVendors, Vendor } from '@/data/mockData';
+import { useVendors } from '@/hooks/useVendors';
 import {
   Dialog,
   DialogContent,
@@ -27,6 +27,16 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const categories = [
   { value: 'catering', label: 'Catering' },
@@ -40,10 +50,11 @@ const categories = [
 ];
 
 const Vendors = () => {
-  const [vendors, setVendors] = useState<Vendor[]>(mockVendors);
+  const { vendors, isLoading, createVendor, deleteVendor } = useVendors();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [vendorToDelete, setVendorToDelete] = useState<string | null>(null);
   const [newVendor, setNewVendor] = useState({
     name: '',
     category: '',
@@ -57,7 +68,7 @@ const Vendors = () => {
   const filteredVendors = vendors.filter((vendor) => {
     const matchesSearch =
       vendor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      vendor.email.toLowerCase().includes(searchQuery.toLowerCase());
+      (vendor.email?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
     const matchesCategory = selectedCategory === 'all' || vendor.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -76,27 +87,34 @@ const Vendors = () => {
     return icons[category] || '✨';
   };
 
-  const handleAddVendor = (e: React.FormEvent) => {
+  const handleAddVendor = async (e: React.FormEvent) => {
     e.preventDefault();
-    const vendor: Vendor = {
-      id: String(vendors.length + 1),
+    await createVendor.mutateAsync({
       name: newVendor.name,
-      category: newVendor.category as Vendor['category'],
+      category: newVendor.category,
       contact: newVendor.contact,
       email: newVendor.email,
-      priceRange: newVendor.priceRange,
-      rating: 0,
-      status: 'active',
+      price_range: newVendor.priceRange,
       description: newVendor.description,
-    };
-    setVendors([...vendors, vendor]);
+    });
     setNewVendor({ name: '', category: '', contact: '', email: '', priceRange: '', description: '' });
     setIsAddDialogOpen(false);
-    toast({
-      title: 'Vendor Ditambahkan',
-      description: `${vendor.name} berhasil ditambahkan.`,
-    });
   };
+
+  const handleDeleteVendor = async () => {
+    if (vendorToDelete) {
+      await deleteVendor.mutateAsync(vendorToDelete);
+      setVendorToDelete(null);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-8">
@@ -152,7 +170,6 @@ const Vendors = () => {
                   value={newVendor.email}
                   onChange={(e) => setNewVendor({ ...newVendor, email: e.target.value })}
                   placeholder="email@vendor.com"
-                  required
                 />
               </div>
               <div>
@@ -161,7 +178,6 @@ const Vendors = () => {
                   value={newVendor.contact}
                   onChange={(e) => setNewVendor({ ...newVendor, contact: e.target.value })}
                   placeholder="08xxxxxxxxxx"
-                  required
                 />
               </div>
               <div>
@@ -170,7 +186,6 @@ const Vendors = () => {
                   value={newVendor.priceRange}
                   onChange={(e) => setNewVendor({ ...newVendor, priceRange: e.target.value })}
                   placeholder="Rp 10.000.000 - 30.000.000"
-                  required
                 />
               </div>
               <div>
@@ -182,8 +197,19 @@ const Vendors = () => {
                   rows={3}
                 />
               </div>
-              <Button type="submit" className="w-full bg-accent hover:bg-rose-gold-dark">
-                Simpan Vendor
+              <Button 
+                type="submit" 
+                className="w-full bg-accent hover:bg-rose-gold-dark"
+                disabled={createVendor.isPending}
+              >
+                {createVendor.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Menyimpan...
+                  </>
+                ) : (
+                  'Simpan Vendor'
+                )}
               </Button>
             </form>
           </DialogContent>
@@ -249,72 +275,104 @@ const Vendors = () => {
       </div>
 
       {/* Vendors Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredVendors.map((vendor) => (
-          <div
-            key={vendor.id}
-            className="bg-card rounded-2xl p-6 border border-border shadow-soft hover:shadow-card transition-all duration-300"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-pink-soft flex items-center justify-center text-2xl">
-                  {getCategoryIcon(vendor.category)}
+      {filteredVendors.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground text-lg">Belum ada vendor. Tambahkan vendor baru!</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredVendors.map((vendor) => (
+            <div
+              key={vendor.id}
+              className="bg-card rounded-2xl p-6 border border-border shadow-soft hover:shadow-card transition-all duration-300"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-pink-soft flex items-center justify-center text-2xl">
+                    {getCategoryIcon(vendor.category)}
+                  </div>
+                  <div>
+                    <h3 className="font-display text-lg font-semibold text-foreground">{vendor.name}</h3>
+                    <p className="text-sm text-muted-foreground capitalize">{vendor.category}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-display text-lg font-semibold text-foreground">{vendor.name}</h3>
-                  <p className="text-sm text-muted-foreground capitalize">{vendor.category}</p>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="p-1 hover:bg-secondary rounded-lg transition-colors">
+                      <MoreVertical className="w-5 h-5 text-muted-foreground" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem>Lihat Detail</DropdownMenuItem>
+                    <DropdownMenuItem>Edit</DropdownMenuItem>
+                    <DropdownMenuItem 
+                      className="text-destructive"
+                      onClick={() => setVendorToDelete(vendor.id)}
+                    >
+                      Hapus
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{vendor.description || 'Tidak ada deskripsi'}</p>
+
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Mail className="w-4 h-4" />
+                  <span>{vendor.email || '-'}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Phone className="w-4 h-4" />
+                  <span>{vendor.contact || '-'}</span>
                 </div>
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="p-1 hover:bg-secondary rounded-lg transition-colors">
-                    <MoreVertical className="w-5 h-5 text-muted-foreground" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem>Lihat Detail</DropdownMenuItem>
-                  <DropdownMenuItem>Edit</DropdownMenuItem>
-                  <DropdownMenuItem className="text-destructive">Hapus</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
 
-            <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{vendor.description}</p>
-
-            <div className="space-y-2 mb-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Mail className="w-4 h-4" />
-                <span>{vendor.email}</span>
+              <div className="flex items-center justify-between pt-4 border-t border-border">
+                <div className="flex items-center gap-1">
+                  <Star className="w-4 h-4 fill-accent text-accent" />
+                  <span className="font-semibold text-foreground">{vendor.rating ?? 0}</span>
+                </div>
+                <Badge
+                  variant="outline"
+                  className={
+                    vendor.status === 'active'
+                      ? 'bg-green-100 text-green-700 border-green-200'
+                      : 'bg-gray-100 text-gray-700 border-gray-200'
+                  }
+                >
+                  {vendor.status === 'active' ? 'Aktif' : 'Tidak Aktif'}
+                </Badge>
               </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Phone className="w-4 h-4" />
-                <span>{vendor.contact}</span>
+
+              <div className="mt-3">
+                <p className="text-sm font-medium text-accent">{vendor.price_range || '-'}</p>
               </div>
             </div>
+          ))}
+        </div>
+      )}
 
-            <div className="flex items-center justify-between pt-4 border-t border-border">
-              <div className="flex items-center gap-1">
-                <Star className="w-4 h-4 fill-accent text-accent" />
-                <span className="font-semibold text-foreground">{vendor.rating}</span>
-              </div>
-              <Badge
-                variant="outline"
-                className={
-                  vendor.status === 'active'
-                    ? 'bg-green-100 text-green-700 border-green-200'
-                    : 'bg-gray-100 text-gray-700 border-gray-200'
-                }
-              >
-                {vendor.status === 'active' ? 'Aktif' : 'Tidak Aktif'}
-              </Badge>
-            </div>
-
-            <div className="mt-3">
-              <p className="text-sm font-medium text-accent">{vendor.priceRange}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!vendorToDelete} onOpenChange={() => setVendorToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Vendor?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tindakan ini tidak dapat dibatalkan. Vendor akan dihapus secara permanen dari sistem.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteVendor}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
