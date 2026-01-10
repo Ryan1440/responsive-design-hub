@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Search, Filter, MoreVertical, Mail, Phone, Calendar, Wallet, Store, Users } from 'lucide-react';
+import { Plus, Search, Filter, MoreVertical, Mail, Phone, Calendar, Wallet, Store, Users, MapPin, Eye, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -16,10 +16,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useClients } from '@/hooks/useClients';
 import { useClientVendors } from '@/hooks/useClientVendors';
+import { useVendors } from '@/hooks/useVendors';
 import { useAuth } from '@/hooks/useAuth';
 import { Tables } from '@/integrations/supabase/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -28,11 +36,14 @@ import AssignVendorDialog from '@/components/admin/AssignVendorDialog';
 type Client = Tables<'clients'>;
 
 const Clients = () => {
-  const { clients, isLoading, createClient, deleteClient } = useClients();
-  const { clientVendors } = useClientVendors();
+  const { clients, isLoading, createClient, updateClient, deleteClient } = useClients();
+  const { clientVendors, getVendorsForClient } = useClientVendors();
+  const { vendors } = useVendors();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [newClient, setNewClient] = useState({
@@ -44,6 +55,18 @@ const Clients = () => {
     venue: '',
     budget: '',
     preferences: '',
+  });
+  const [editClient, setEditClient] = useState({
+    id: '',
+    name: '',
+    partner: '',
+    email: '',
+    phone: '',
+    eventDate: '',
+    venue: '',
+    budget: '',
+    preferences: '',
+    status: 'planning',
   });
   const { toast } = useToast();
 
@@ -81,6 +104,13 @@ const Clients = () => {
     return clientVendors.filter(cv => cv.client_id === clientId).length;
   };
 
+  const getAssignedVendors = (clientId: string) => {
+    const assignments = getVendorsForClient(clientId);
+    return assignments
+      .map(cv => vendors.find(v => v.id === cv.vendor_id))
+      .filter(Boolean);
+  };
+
   const handleAddClient = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -99,6 +129,47 @@ const Clients = () => {
 
     setNewClient({ name: '', partner: '', email: '', phone: '', eventDate: '', venue: '', budget: '', preferences: '' });
     setIsAddDialogOpen(false);
+  };
+
+  const handleViewDetail = (client: Client) => {
+    setSelectedClient(client);
+    setIsDetailDialogOpen(true);
+  };
+
+  const handleOpenEdit = (client: Client) => {
+    setEditClient({
+      id: client.id,
+      name: client.name,
+      partner: client.partner,
+      email: client.email,
+      phone: client.phone || '',
+      eventDate: client.event_date,
+      venue: client.venue || '',
+      budget: client.budget?.toString() || '',
+      preferences: client.preferences?.join(', ') || '',
+      status: client.status || 'planning',
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditClient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    await updateClient.mutateAsync({
+      id: editClient.id,
+      name: editClient.name,
+      partner: editClient.partner,
+      email: editClient.email,
+      phone: editClient.phone || null,
+      event_date: editClient.eventDate,
+      venue: editClient.venue || null,
+      budget: parseInt(editClient.budget) || 0,
+      status: editClient.status,
+      preferences: editClient.preferences ? editClient.preferences.split(',').map(p => p.trim()) : null,
+    });
+
+    setIsEditDialogOpen(false);
+    toast({ title: 'Klien berhasil diperbarui' });
   };
 
   const handleDeleteClient = async (clientId: string) => {
@@ -287,8 +358,14 @@ const Clients = () => {
                     <Store className="w-4 h-4 mr-2" />
                     Assign Vendor
                   </DropdownMenuItem>
-                  <DropdownMenuItem>Lihat Detail</DropdownMenuItem>
-                  <DropdownMenuItem>Edit</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleViewDetail(client)}>
+                    <Eye className="w-4 h-4 mr-2" />
+                    Lihat Detail
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleOpenEdit(client)}>
+                    <Pencil className="w-4 h-4 mr-2" />
+                    Edit
+                  </DropdownMenuItem>
                   <DropdownMenuItem 
                     className="text-destructive"
                     onClick={() => handleDeleteClient(client.id)}
@@ -367,6 +444,227 @@ const Clients = () => {
         open={isAssignDialogOpen}
         onOpenChange={setIsAssignDialogOpen}
       />
+
+      {/* Detail Client Dialog */}
+      <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-display">Detail Klien</DialogTitle>
+          </DialogHeader>
+          {selectedClient && (
+            <div className="space-y-6 mt-4">
+              {/* Names & Status */}
+              <div className="flex items-center justify-between">
+                <h2 className="font-display text-xl font-semibold text-foreground">
+                  {selectedClient.name} & {selectedClient.partner}
+                </h2>
+                {getStatusBadge(selectedClient.status)}
+              </div>
+
+              {/* Contact Info */}
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Kontak</h4>
+                <div className="flex items-center gap-2 text-foreground">
+                  <Mail className="w-4 h-4 text-muted-foreground" />
+                  <span>{selectedClient.email}</span>
+                </div>
+                {selectedClient.phone && (
+                  <div className="flex items-center gap-2 text-foreground">
+                    <Phone className="w-4 h-4 text-muted-foreground" />
+                    <span>{selectedClient.phone}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Event Info */}
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Acara</h4>
+                <div className="flex items-center gap-2 text-foreground">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <span>
+                    {new Date(selectedClient.event_date).toLocaleDateString('id-ID', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </span>
+                </div>
+                {selectedClient.venue && (
+                  <div className="flex items-center gap-2 text-foreground">
+                    <MapPin className="w-4 h-4 text-muted-foreground" />
+                    <span>{selectedClient.venue}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 text-foreground">
+                  <Wallet className="w-4 h-4 text-muted-foreground" />
+                  <span>{formatCurrency(selectedClient.budget)}</span>
+                </div>
+              </div>
+
+              {/* Preferences */}
+              {selectedClient.preferences && selectedClient.preferences.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Preferensi</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedClient.preferences.map((pref) => (
+                      <Badge key={pref} variant="secondary">
+                        {pref}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Assigned Vendors */}
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+                  Vendor Ter-assign ({getVendorCount(selectedClient.id)})
+                </h4>
+                {getAssignedVendors(selectedClient.id).length > 0 ? (
+                  <div className="space-y-2">
+                    {getAssignedVendors(selectedClient.id).map((vendor) => (
+                      <div key={vendor?.id} className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-foreground">{vendor?.name}</p>
+                          <p className="text-sm text-muted-foreground">{vendor?.category}</p>
+                        </div>
+                        <Badge variant="outline">{vendor?.status}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Belum ada vendor yang di-assign.</p>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-4 border-t border-border">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setIsDetailDialogOpen(false);
+                    handleOpenEdit(selectedClient);
+                  }}
+                >
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Edit Klien
+                </Button>
+                <Button
+                  className="flex-1 bg-accent hover:bg-accent/90"
+                  onClick={() => {
+                    setIsDetailDialogOpen(false);
+                    handleOpenAssignDialog(selectedClient);
+                  }}
+                >
+                  <Store className="w-4 h-4 mr-2" />
+                  Assign Vendor
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Client Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display">Edit Klien</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditClient} className="space-y-4 mt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Nama Mempelai Wanita</Label>
+                <Input
+                  value={editClient.name}
+                  onChange={(e) => setEditClient({ ...editClient, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Nama Mempelai Pria</Label>
+                <Input
+                  value={editClient.partner}
+                  onChange={(e) => setEditClient({ ...editClient, partner: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Email</Label>
+              <Input
+                type="email"
+                value={editClient.email}
+                onChange={(e) => setEditClient({ ...editClient, email: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label>Telepon</Label>
+              <Input
+                value={editClient.phone}
+                onChange={(e) => setEditClient({ ...editClient, phone: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Tanggal Acara</Label>
+              <Input
+                type="date"
+                value={editClient.eventDate}
+                onChange={(e) => setEditClient({ ...editClient, eventDate: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label>Venue</Label>
+              <Input
+                value={editClient.venue}
+                onChange={(e) => setEditClient({ ...editClient, venue: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Budget (Rp)</Label>
+              <Input
+                type="number"
+                value={editClient.budget}
+                onChange={(e) => setEditClient({ ...editClient, budget: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Status</Label>
+              <Select
+                value={editClient.status}
+                onValueChange={(value) => setEditClient({ ...editClient, status: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="planning">Planning</SelectItem>
+                  <SelectItem value="in-progress">In Progress</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Preferensi (pisahkan dengan koma)</Label>
+              <Input
+                value={editClient.preferences}
+                onChange={(e) => setEditClient({ ...editClient, preferences: e.target.value })}
+              />
+            </div>
+            <Button 
+              type="submit" 
+              className="w-full bg-accent hover:bg-accent/90"
+              disabled={updateClient.isPending}
+            >
+              {updateClient.isPending ? 'Menyimpan...' : 'Simpan Perubahan'}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
