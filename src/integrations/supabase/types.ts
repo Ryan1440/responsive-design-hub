@@ -109,8 +109,11 @@ export type Database = {
           created_by: string | null
           due_date: string | null
           id: string
+          midtrans_order_id: string | null
+          midtrans_transaction_id: string | null
           notes: string | null
           paid_date: string | null
+          payment_method: string | null
           status: string | null
           type: string
           updated_at: string | null
@@ -123,8 +126,11 @@ export type Database = {
           created_by?: string | null
           due_date?: string | null
           id?: string
+          midtrans_order_id?: string | null
+          midtrans_transaction_id?: string | null
           notes?: string | null
           paid_date?: string | null
+          payment_method?: string | null
           status?: string | null
           type: string
           updated_at?: string | null
@@ -137,8 +143,11 @@ export type Database = {
           created_by?: string | null
           due_date?: string | null
           id?: string
+          midtrans_order_id?: string | null
+          midtrans_transaction_id?: string | null
           notes?: string | null
           paid_date?: string | null
+          payment_method?: string | null
           status?: string | null
           type?: string
           updated_at?: string | null
