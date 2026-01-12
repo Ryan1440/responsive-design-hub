@@ -1,17 +1,22 @@
-import { Wallet, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { Wallet, CheckCircle, Clock, AlertCircle, CreditCard } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useClients } from '@/hooks/useClients';
 import { usePayments } from '@/hooks/usePayments';
 import { useVendors } from '@/hooks/useVendors';
+import { useMidtrans } from '@/hooks/useMidtrans';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useQueryClient } from '@tanstack/react-query';
 
 const ClientPayments = () => {
   const { user } = useAuth();
   const { clients, isLoading: clientsLoading } = useClients();
   const { payments, isLoading: paymentsLoading } = usePayments();
   const { vendors, isLoading: vendorsLoading } = useVendors();
+  const { payWithMidtrans, isLoading: paymentProcessing } = useMidtrans();
+  const queryClient = useQueryClient();
 
   const isLoading = clientsLoading || paymentsLoading || vendorsLoading;
 
@@ -57,6 +62,17 @@ const ClientPayments = () => {
       default:
         return <Clock className="w-5 h-5 text-yellow-500" />;
     }
+  };
+
+  const handlePayment = (paymentId: string) => {
+    payWithMidtrans(paymentId, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['payments'] });
+      },
+      onPending: () => {
+        queryClient.invalidateQueries({ queryKey: ['payments'] });
+      },
+    });
   };
 
   // Calculate totals
@@ -189,9 +205,22 @@ const ClientPayments = () => {
                     )}
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-right flex flex-col items-end gap-2">
                   <p className="font-bold text-lg text-foreground">{formatCurrency(payment.amount)}</p>
-                  {getStatusBadge(payment.status)}
+                  <div className="flex items-center gap-2">
+                    {getStatusBadge(payment.status)}
+                    {(payment.status === 'pending' || payment.status === 'overdue') && (
+                      <Button
+                        size="sm"
+                        onClick={() => handlePayment(payment.id)}
+                        disabled={paymentProcessing}
+                        className="gap-1"
+                      >
+                        <CreditCard className="w-4 h-4" />
+                        Bayar
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}

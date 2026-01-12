@@ -22,6 +22,9 @@ import ClientVendors from "./pages/dashboard/client/ClientVendors";
 import ContactWO from "./pages/dashboard/ContactWO";
 import VendorOverview from "./pages/dashboard/vendor/VendorOverview";
 import RoleBasedOverview from "./pages/dashboard/RoleBasedOverview";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentPending from "./pages/PaymentPending";
+import PaymentFailed from "./pages/PaymentFailed";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +56,10 @@ const App = () => (
               <Route path="events" element={<VendorOverview />} />
               <Route path="tasks" element={<VendorOverview />} />
             </Route>
+            {/* Payment Result Pages */}
+            <Route path="/payment/success" element={<PaymentSuccess />} />
+            <Route path="/payment/pending" element={<PaymentPending />} />
+            <Route path="/payment/failed" element={<PaymentFailed />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
