@@ -33,13 +33,28 @@ Deno.serve(async (req) => {
       status_code,
     } = notification;
 
+    // Ensure gross_amount is in correct string format (remove decimals if .00)
+    const grossAmountStr = String(gross_amount);
+    
+    // Log signature components for debugging
+    console.log("Signature validation components:", {
+      order_id,
+      status_code,
+      gross_amount: grossAmountStr,
+      server_key_prefix: serverKey ? serverKey.substring(0, 15) + "..." : "NOT SET"
+    });
+
     // Validate signature
     const expectedSignature = createHash("sha512")
-      .update(`${order_id}${status_code}${gross_amount}${serverKey}`)
+      .update(`${order_id}${status_code}${grossAmountStr}${serverKey}`)
       .digest("hex");
 
+    console.log("Expected signature:", expectedSignature);
+    console.log("Received signature:", signature_key);
+
     if (signature_key !== expectedSignature) {
-      console.error("Invalid signature");
+      console.error("Invalid signature - mismatch detected");
+      console.error("This usually means the Server Key doesn't match the Midtrans environment");
       return new Response(
         JSON.stringify({ error: "Invalid signature" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
