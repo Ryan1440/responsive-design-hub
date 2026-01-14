@@ -1,5 +1,18 @@
-import { useState } from 'react';
-import { FileText, Download, Calendar, TrendingUp, ChevronDown, Loader2 } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { FileText, Download, Calendar, TrendingUp, ChevronDown, Loader2, BarChart3, PieChart as PieChartIcon } from 'lucide-react';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from 'recharts';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -42,6 +55,49 @@ const Reports = () => {
   const totalRevenue = (payments || [])
     .filter((p) => p.status === 'paid')
     .reduce((sum, p) => sum + (p.amount || 0), 0);
+
+  // Data untuk Pie Chart - Status Pembayaran
+  const paymentStatusData = useMemo(() => {
+    const paid = (payments || []).filter((p) => p.status === 'paid').length;
+    const pending = (payments || []).filter((p) => p.status === 'pending').length;
+    const overdue = (payments || []).filter((p) => p.status === 'overdue').length;
+    
+    return [
+      { name: 'Lunas', value: paid, color: 'hsl(var(--chart-2))' },
+      { name: 'Menunggu', value: pending, color: 'hsl(var(--chart-4))' },
+      { name: 'Terlambat', value: overdue, color: 'hsl(var(--chart-1))' },
+    ].filter(item => item.value > 0);
+  }, [payments]);
+
+  // Data untuk Bar Chart - Pendapatan Bulanan
+  const monthlyRevenueData = useMemo(() => {
+    const monthlyData: { [key: string]: number } = {};
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    
+    // Initialize last 6 months
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+      monthlyData[key] = 0;
+    }
+    
+    // Sum paid payments by month
+    (payments || [])
+      .filter((p) => p.status === 'paid' && p.paid_date)
+      .forEach((payment) => {
+        const date = new Date(payment.paid_date!);
+        const key = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+        if (monthlyData.hasOwnProperty(key)) {
+          monthlyData[key] += payment.amount || 0;
+        }
+      });
+    
+    return Object.entries(monthlyData).map(([name, amount]) => ({
+      name,
+      amount,
+    }));
+  }, [payments]);
 
   const handleExport = (reportType: string, format: ExportFormat) => {
     const timestamp = new Date().toISOString().split('T')[0];
@@ -285,6 +341,101 @@ const Reports = () => {
               ))}
             </TableBody>
           </Table>
+        </div>
+      </div>
+
+      {/* Charts Section */}
+      <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Pie Chart - Status Pembayaran */}
+        <div className="bg-card rounded-2xl p-6 border border-border shadow-soft">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-pink-soft flex items-center justify-center">
+              <PieChartIcon className="w-5 h-5 text-pink-dark" />
+            </div>
+            <div>
+              <h3 className="font-display text-lg font-semibold text-foreground">Status Pembayaran</h3>
+              <p className="text-sm text-muted-foreground">Distribusi status pembayaran</p>
+            </div>
+          </div>
+          
+          {paymentStatusData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie
+                  data={paymentStatusData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={5}
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  labelLine={false}
+                >
+                  {paymentStatusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  formatter={(value: number) => [`${value} pembayaran`, 'Jumlah']}
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }}
+                />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[280px] flex items-center justify-center text-muted-foreground">
+              Belum ada data pembayaran
+            </div>
+          )}
+        </div>
+
+        {/* Bar Chart - Pendapatan Bulanan */}
+        <div className="bg-card rounded-2xl p-6 border border-border shadow-soft">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-pink-soft flex items-center justify-center">
+              <BarChart3 className="w-5 h-5 text-pink-dark" />
+            </div>
+            <div>
+              <h3 className="font-display text-lg font-semibold text-foreground">Pendapatan Bulanan</h3>
+              <p className="text-sm text-muted-foreground">Pendapatan 6 bulan terakhir</p>
+            </div>
+          </div>
+          
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={monthlyRevenueData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis 
+                dataKey="name" 
+                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                axisLine={{ stroke: 'hsl(var(--border))' }}
+              />
+              <YAxis 
+                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                axisLine={{ stroke: 'hsl(var(--border))' }}
+                tickFormatter={(value) => `${(value / 1000000).toFixed(0)}jt`}
+              />
+              <Tooltip 
+                formatter={(value: number) => [formatCurrency(value), 'Pendapatan']}
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--card))', 
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px'
+                }}
+                labelStyle={{ color: 'hsl(var(--foreground))' }}
+              />
+              <Bar 
+                dataKey="amount" 
+                fill="hsl(var(--primary))" 
+                radius={[4, 4, 0, 0]}
+                name="Pendapatan"
+              />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
